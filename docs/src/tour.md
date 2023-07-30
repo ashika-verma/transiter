@@ -1,13 +1,70 @@
 # The Transiter Tour
 
-The Tour is an introduction to Transiter - a getting started tutorial
-    that will show you how to launch the software,
-     configure it for transit systems you're interested in,
-     and getting the data you want.
+The Tour is a grounds-up introduction to Transiter.
+You'll learn how to get Transiter running,
+    add some transit systems,
+    and read data from the API.
 
+There are some prerequisites for doing the tour:
+
+- Go is installed.
+
+- You've checked out the Transiter Git repo.
+
+- You have a Postgres instance to use, or Docker is available.
 
 ## Launch Transiter
 
+Transiter requires a Postgres database.
+By default it tries to connect to Postgres on `localhost:5432`
+  with the username/password/database combination `transiter`/`transiter`/`transiter`.
+If you don't already have Postgres running and Docker is available,
+  you can easily spin up Postgres with these credentials by running the following command in the root of the repo:
+
+```
+$ docker-compose up -d postgres
+```
+
+Otherwise, just create new empty database in your preexisting Postgres instance
+  and have your connection details handy.
+
+Transiter is written in Go.
+With Go installed and Postgres running, the Transiter server is launched using:
+
+```
+$ go run . server --log-level debug
+```
+
+If you're using a non-default Postgres configuration, launch Transiter using:
+
+```
+$ go run . server --log-level debug --$postgres://${USERNAME}:${PASSWORD}@${HOST}:${PORT}/${DATABASE_NAME}
+```
+
+We've passed `--log-level debug` to start the server with debug logging.
+This will allow us to have more insight into what's happening inside the server later.
+
+During the Tour we're going to interact with the Transiter server in two ways:
+
+*HTTP API*: after launching the Transiter server, 
+  Transiter exports a public HTTP API on port 8080.
+  Let's see what it says:
+
+```
+$ curl localhost:8080
+
+{
+  "transiter":  {
+    "version":  "1.0.0-dev",
+    "href":  "https://github.com/jamespfennell/transiter"
+  },
+  "systems":  {
+    "count":  "0"
+  }
+}
+```
+
+GOT TO HERE
 
 To begin, we're going to launch Transiter.
 The easiest way to do this is with Docker compose and the
@@ -400,121 +457,8 @@ The next closest station is Montgomery Street, which is 534 meters away.
 
 It's possible to search for more stops by passing a distance URL parameter to the search.
 
-## Add inter-system transfers
-
-Transiter supports installing multiple transit system side-by-side.
-In many cases, these transit systems have connections between them,
-    though this is not described in the single-system GTFS feeds.
-Transiter provides a feature to create these inter-system transfers 
-    by searching for stations in multiple systems that are geographically close to each other.
-We'll demo this by showing to crate inter-system transfers between the BART and Caltrain.
-
-
-First, put the following system config for the Caltrain in a file `caltrain.yaml` in your current working directory:
-```yaml
-name: Caltrain
-
-feeds:
-  GTFS-Static:
-    http:
-      url: http://data.trilliumtransit.com/gtfs/caltrain-ca-us/caltrain-ca-us.zip
-    parser:
-      built_in: GTFS_STATIC
-``` 
-
-Then install the Caltrain system:
-
-```
-curl -X PUT "localhost:8000/systems/caltrain?sync=true"  -F 'config_file=@caltrain.yaml'
-```
-
-Next, we'll preview what transfers we can create using geographic proximity.
-The following command searches for BART and Caltrain stations that are within 200 meters of each other:
-```
-curl -X POST "http://localhost:8000/admin/transfers-config/preview?system_id=bart&system_id=caltrain&distance=200"
-```
-
-The response contains, essentially, a single match:
-    the [Milbrae station](https://en.wikipedia.org/wiki/Millbrae_station) on the San Francisco peninsula.
-Searching for transit connections between Caltrain and BART reveals that 
-[this is the only official transfer](https://www.caltrain.com/riderinfo/connections.html).
-
-??? question "Why does the Milbrae transfer appear four times in the result?"
-    Like GTFS Static transfers, the inter-system transfers created by Transiter are uni-directional,
-        with a specific *from* station and a specific *to* station.
-    A bi-directional transfer is represented by two uni-directional transfers.
-    This accounts for why Milbrae appears at least twice in the result.
-    
-    In addition, the Caltrain GTFS Static feed
-    contains a separate station for the northbound (id=`70061`) and southbound directions (id=`70062`)
-    at Milbrae and gives no indication that these two stations are actually one.
-    Transiter then creates two uni-directional transfers for the BART station and the northbound Caltrain station,
-    and another two for the BART station and the southbound Caltrain station.
-    This gives four results in all.
-    
-    The Caltrain GTFS Static feed having two disconnected stops for one station
-    is representive of the low-quality of many GTFS feeds provided by transit agencies.
-    Transiter tries in many cases to account for low-quality data, but does not handle all cases.
-
-
-It's possible to widen the scope of search by increasing the distance parameter.
-If the distance is increased to one kilometer another results appears:
-    a connection between the San Bruno BART and the San Bruno Caltrain:
-    
-```
-curl -X POST "http://localhost:8000/admin/transfers-config/preview?system_id=bart&system_id=caltrain&distance=1000"
-```
-
-These stations are within walking distance of each other, but are not official connections.
-
-Having previewed the result of the search, Transiter can now be instructed to create
-    the transfers:
-
-```
-curl -X POST "http://localhost:8000/admin/transfers-config?system_id=bart&system_id=caltrain&distance=200"
-```
-
-Navigating to the Milbrae BART station endpoint (`http://localhost:8000/systems/bart/stops/place_MLBR`),
- the transfers will appear in the response,
-
-```json
-{
-  // ...
-  "transfers": [
-    {
-      "from_stop": {
-        "id": "place_MLBR",
-        "name": "Millbrae",
-        "href": "http://localhost:8000/systems/bart/stops/place_MLBR"
-      },
-      "to_stop": {
-        "id": "70061",
-        "name": "Millbrae Caltrain",
-        "system": {
-          "id": "caltrain",
-          "status": "ACTIVE",
-          "name": "Caltrain",
-          "href": "http://localhost:8000/systems/caltrain"
-        },
-      }
-      // ...
-    }
-    // ...
-  ]
-  // ...
-}
-```
-
-Because the Caltrain transfer is an inter-system transfer,
-    its system is included in the response.
-    
-    
-   
 ## Where to go next?
-
 
 - Create a transit system config for a system you're interested in.
 
 - Consult the API reference to find other endpoints and data that Transiter exposes.
-
-- Learn about handling non-GTFS or extended-GTFS feeds.
