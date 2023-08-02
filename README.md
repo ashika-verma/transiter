@@ -14,19 +14,13 @@ The endpoint for a particular stop, for example, returns the stop's static data
 
 You can get a sense for the data that's available by navigating
     through the [live demo site](https://demo.transiter.dev).
-Transiter has a [dedicated documentation website](https://docs.transiter.dev)
-
-
-**Project status**: a
-    [migration from Python to Go](https://jpfennell.com/posts/transiter-python-go)
-    was recently merged into mainline.
-There are still some features missing in the Go version
-    and adding these is being tracked in 
-    [issue #87](https://github.com/jamespfennell/transiter/issues/87).
-The Python version of Transiter can be viewed in 
-    [this archived GitHub repository](https://github.com/jamespfennell/transiter-python).
+[closingdoors.nyc](https://closingdoors.nyc) and [realtimerail.nyc](https://realtime.nyc)
+    are examples of frontend apps built on top of Transiter.
+Transiter has a [dedicated documentation website](https://docs.transiter.dev).
 
 ## Getting started
+
+This is a whirlwind version of [The Transiter Tour](https://docs.transiter.dev/tour).
 
 Transiter uses Postgres for storing data,
     and by default assumes the database/user/password is `transiter`/`transiter`/`transiter`.
@@ -74,9 +68,7 @@ If you installed the NYC subway, to get data about the Rockefeller Center statio
 localhost:8080/systems/us-ny-subway/stops/D15
 ```
 
-[Transiter's documentation website](https://docs.transiter.dev) has much more information,
-    including how to run Tranister with Docker and how to use a non-default Postgres configuration.
-
+[Transiter's documentation website](https://docs.transiter.dev) has much more information.
 
 ## Development
 

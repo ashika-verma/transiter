@@ -18,7 +18,7 @@ func Entrypoint(ctx context.Context, r *Context, req *api.EntrypointRequest) (*a
 	}
 	return &api.EntrypointReply{
 		Transiter: &api.EntrypointReply_TransiterDetails{
-			Version: "1.0.0alpha",
+			Version: "1.0.0-dev",
 			Href:    "https://github.com/jamespfennell/transiter",
 			// TODO: build information
 		},

@@ -1,15 +1,34 @@
-site_name: Transiter 0.5
+site_name: Transiter 1.0.0-dev
 docs_dir: src
 theme:
   name: material
   palette:
-    scheme: default
-    primary: teal
-    accent: teal
+
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+        
+  #  scheme: default
+  #  primary: blue
+  #  accent: blue
   extra_css: extra.css
   extensions: []
 plugins:
   - search
+
+repo_url: https://github.com/jamespfennell/transiter
 copyright: >
   Transiter is licensed under the
   <a href='https://raw.githubusercontent.com/jamespfennell/transiter/master/LICENSE'>MIT license</a>
@@ -25,13 +44,9 @@ nav:
   - Home: index.md
   - tour.md
   - systems.md
-  - API Reference:
+  - Deployment and monitoring: deployment.md
+  - API reference:
+      - Introduction: api/index.md
       - Public API (resources): api/public_resources.md
       - Public API (endpoints): api/public_endpoints.md
       - Admin API: api/admin.md
-  - Running and deployment:
-    - Running Transiter: deployment/running-transiter.md
-    - Building and serving the docs: deployment/documentation.md
-    - Controlling permissions: deployment/permissions.md
-    - Monitoring using Prometheus: deployment/monitoring.md
-    - Production advice: deployment/production.md

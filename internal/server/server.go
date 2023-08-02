@@ -110,7 +110,7 @@ func Run(ctx context.Context, args RunArgs) error {
 			logger.InfoCtx(ctx, "scheduler stopped")
 		}()
 		if err := realScheduler.Reset(ctx); err != nil {
-			return fmt.Errorf("failed to intialize the scheduler: %w", err)
+			return fmt.Errorf("failed to initialize the scheduler: %w", err)
 		}
 		logger.InfoCtx(ctx, "scheduler running")
 	}

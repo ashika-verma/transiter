@@ -191,3 +191,146 @@ Simply:
 transiterclt launch executor --logging-level info
 ```
 
+
+
+
+# Documentation
+
+Transiter can be configured to serve the documentation 
+on the `/docs` path.
+This requires that the documentation has been built into static
+files using `mkdocs`; Transiter then serves files directly from 
+the documentation build directory.
+
+## Security and performance notes
+
+Please be aware that there is an inherent security concern here.
+If the documentation is misconfigured, Transiter may serve
+files from a random directory on the host machine and may thus leak 
+data and files on the machine. 
+To address this concern,
+
+1. The documentation is disabled by default. A person setting up a Transiter instance
+    has to explicitly enable it by setting the environment variable
+    `TRANSITER_DOCUMENTATION_ENABLED` to be true.
+    If the documentation is disabled any path on `/docs` returns a
+    `404 NOT FOUND` response.
+    
+2. When serving documentation, Transiter will make an effort to ensure that the
+    configuration is correct and that it is really serving the documentation
+    and not some other directory. 
+    To do this, Transiter embeds a 96 character hex string in each documentation page
+    and before serving files verifies that the hex string is in the `index.html`
+    file at the root of the directory.
+    This security mechanism addresses accidental mistakes.
+    If the security check fails, a `503 SERVICE UNAVAILABLE` response is sent.
+    
+In addition to the security concern, there is also a performance concern.
+The files are served using Python's Flask and Werkzeug libraries; this 
+is a highly non-performant way to serve static content.
+In addition, the security check described above entails an additional fixed computational
+cost for serving each file.
+For these performance reasons, consider not enabling the documentation
+in production if malicious users could access it and use it as the basis
+for a DoS attack.
+
+
+## Setting up the documentation
+
+First, to enable the documentation set the environment 
+variable
+    `TRANSITER_DOCUMENTATION_ENABLED` to be true.
+    
+Next, you need to compile the documentation.
+In the Python environment you're working in, ensure 
+the Transiter developer requirements have been installed;
+in the root of the Github repo, run
+```sh
+pip install -r dev-requirements.txt
+```
+Then `cd` into the `docs` directory and run
+```sh
+mkdocs build
+```
+This will result in the documentation static files being built
+and placed in the `site` subdirectory.
+
+Finally, configure the 
+`TRANSITER_DOCUMENTATION_ROOT` environment variable.
+This should point to the `site` subdirectory. 
+This can be either:
+
+1. An absolute path.
+
+2. A relative path, relative to the location of the Flask application.
+
+If you're launching the Flask app based on the checked out Github
+repo, it is located in `transiter/http` and hence the 
+environment variable should be set
+to `../../docs/site`. (This is, in fact, the default.)
+
+Verify it's working by visiting the `/docs` path.
+If it's not working, consult the console output which will detail
+exactly what's happening.
+
+## Documentation in the Docker image
+
+The Docker image contains the built HTML documentation in the directory
+`/transiter-docs`.
+The internal documentation is disabled by default.
+
+
+# other
+
+# Monitoring using Prometheus
+
+When running Transiter, it is critical that successful feed updates are occurring regularly.
+Otherwise, the data in the Transiter instance will be stale.
+In order to monitor the feed update process, Transiter exports metrics in Prometheus format on the `/metrics`
+    endpoint.
+
+There are four metrics exported.
+For architectural reasons, these metrics are ultimately managed in the scheduler process.
+If that process is not running, metrics will be unavailable.
+
+## TRANSITER_NUM_UPDATES
+
+This metric has four labels: `system_id`, `feed_id`, `status` (either `FAILURE` or `SUCCESS`), and `result`.
+For each label, the corresponding time series reports the number of updates that have finished for that feed
+    and with that status
+
+Generally one will be interested in the `SUCCESS` case.
+For this case there are two possible results: `UPDATED` and `NOT_NEEDED`.
+The latter indicates that Transiter performed the feed update, 
+    but that the data it retrieved from the transit agency was identical to the last successful update.
+In this case the rest of the feed update process is skipped.
+If `NOT_NEEDED` is seen consecutively for a long time, it indicates that the transit agency is not provided updated data.
+This may be a failure case, even though the status is `SUCCESS`.
+Or, it may not be a failure case if it's nighttime, and the transit agency not running any services.
+
+
+## TRANSITER_LAST_UPDATE
+
+This metric has the same four labels as the last.
+For each label, the corresponding time series reports the timestamp when the last update for that feed and
+with that status occurred.
+
+
+## TRANSITER_SUCCESSFUL_UPDATE_LATENCY
+
+This metric has two labels: `system_id` and `feed_id`.
+The metric reports the number of seconds between the last two feed updates with status `SUCCESS` and result `UPDATED`.
+Over time, the metric is an accurate measure of how often data from that feed is being updated.
+
+This metric is a good candidate for alerting because if is large, it directly indicates stale data.
+There is a catch, though: if the reason feed updates are not occurring is because of internal problems with Transiter
+(for example, RabbitMQ is down), the most recent value of the metric will stay constant and not indicate a problem.
+Conversely, the `TRANSITER_NUM_UPDATES` metric will still catch this case: if that metric remains constant for a long
+    time, it indicates no updates are happening.
+
+
+## TRANSITER_NUM_ENTITIES
+
+This metric reports the number of entities (trips, alerts, routes, etc.)
+that are in the system, by feed.
+It has three labels: `system_id`, `feed_id` and `entity_type`.

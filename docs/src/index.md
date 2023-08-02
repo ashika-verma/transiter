@@ -1,21 +1,21 @@
 # Transiter: web service for transit data
 
 Welcome to the Transiter documentation!
-If this is your first time encountering Transiter,
-the [Transiter Tour](tour.md) is the best place to start.
+If this is your first time here,
+    the [Transiter Tour](tour.md) is the best place to start.
 
 ## Contents
-
-- API reference:
-    - [Public API resources](api/public_resources.md).
-    - [Public API endpoints](api/public_endpoints.md).
-    - [Admin API](api/admin.md).
 
 - [Configuring transit systems](systems.md).
     Learn how to integrate a transit system you're interested in with Transiter.
     
-- [Deployment](deployment/running-transiter.md).
+- [Deployment and monitoring](deployment.md).
     Running Transiter locally and in production.
+
+- [API reference](api/index.md):
+    - [Public API resources](api/public_resources.md).
+    - [Public API endpoints](api/public_endpoints.md).
+    - [Admin API](api/admin.md).
 
 ## External links
 

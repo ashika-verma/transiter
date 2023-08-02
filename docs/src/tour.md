@@ -1,15 +1,15 @@
 # The Transiter Tour
 
-The Tour is a grounds-up introduction to Transiter.
+The Transiter Tour is a grounds-up introduction to Transiter.
 You'll learn how to get Transiter running,
     add some transit systems,
     and read data from the API.
 
-There are some prerequisites for doing the tour:
+There are some prerequisites for the Tour:
 
-- Go is installed.
+- You have Go installed.
 
-- You've checked out the Transiter Git repo.
+- You've cloned the Transiter Git repo and are in the root of the repo.
 
 - You have a Postgres instance to use, or Docker is available.
 
@@ -26,7 +26,7 @@ $ docker-compose up -d postgres
 ```
 
 Otherwise, just create new empty database in your preexisting Postgres instance
-  and have your connection details handy.
+  and have your connection details ready.
 
 Transiter is written in Go.
 With Go installed and Postgres running, the Transiter server is launched using:
@@ -38,21 +38,23 @@ $ go run . server --log-level debug
 If you're using a non-default Postgres configuration, launch Transiter using:
 
 ```
-$ go run . server --log-level debug --$postgres://${USERNAME}:${PASSWORD}@${HOST}:${PORT}/${DATABASE_NAME}
+$ go run . server --log-level debug \
+    -p postgres://${USERNAME}:${PASSWORD}@${HOST}:${PORT}/${DATABASE_NAME}
 ```
 
 We've passed `--log-level debug` to start the server with debug logging.
-This will allow us to have more insight into what's happening inside the server later.
+This will give us more insight into what's happening inside the server later.
 
-During the Tour we're going to interact with the Transiter server in two ways:
+During the Tour we're going to interact with the Transiter server in two ways.
 
-*HTTP API*: after launching the Transiter server, 
+### HTTP API
+
+After launching the Transiter server, 
   Transiter exports a public HTTP API on port 8080.
-  Let's see what it says:
+  Let's see what it returns:
 
 ```
 $ curl localhost:8080
-
 {
   "transiter":  {
     "version":  "1.0.0-dev",
@@ -64,81 +66,90 @@ $ curl localhost:8080
 }
 ```
 
-GOT TO HERE
+The main thing to note here is that the number of systems is 0.
+This means we have no transit system installed.
+Because of this there's not much else to see in the API yet.
 
-To begin, we're going to launch Transiter.
-The easiest way to do this is with Docker compose and the
-    [standard Transiter compose config file](https://github.com/jamespfennell/transiter/blob/master/docker/docker-compose.yml).
-Simply run,
+Transiter also exports an admin HTTP API on port 8082.
+This is a superset of the public API,
+  so endpoints accessible through the public API are also accessible through the admin API:
 
-    docker-compose up -f path/to/docker-compose.yml
+```
+$ curl localhost:8082
+# same response as before
+```
 
-It will take a minute for the images to download from Docker Hub and for the containers to be launched successfully.
+However admin API has additional functionality which is used to manage Transiter.
+For example, we can discover the current log level:
 
-When everything is launched, Transiter will be listening on port 8000.
-If you navigate to `localhost:8000` in your web browser (or use `curl`), you will find the Transiter landing page,
-
-```json
+```
+curl localhost:8082/loglevel 
 {
-  "transiter": {
-    "version": "0.4.5",
-    "href": "https://github.com/jamespfennell/transiter",
-    "docs": {
-      "href": "https://demo.transiter.io/docs/"
-    }
-  },
-  "systems": {
-    "count": 0,
-    "href": "https://demo.transiter.io/systems"
-  }
+  "logLevel":  "DEBUG"
 }
 ```
 
-As you can see, there are no (transit) systems installed, and the next step is to install one!
+By sending a `POST` request to the same endpoint, it's possible to change log level.
 
-??? info "Running Transiter without Docker"
-    It's possible to run Transiter on "bare metal" without Docker; 
-    the [running Transiter](deployment/running-transiter.md) page details how.
-    It's quite a bit more work though, so for getting started we recommend the Docker approach.
+In the Tour we will mainly avoid the admin HTTP API,
+  and will instead manage Transiter using the Transiter CLI.
 
-??? info "Building the Docker images locally"
-    If you want to build the Docker images locally that's easy, too:
-    just check out the [Transiter Git repository](https://github.com/jamespfennell/transiter)
-    and in the root of repository run `make docker`.
-   
-## Install a system
+??? info "gRPC APIs"
+    In addition to the two HTTP APIs,
+    Transiter also runs a public gRPC API on port 8081 and an admin gRPC API on 8083.
+    These are identical to the HTTP APIs, but may easier to use programmatically.
 
-Each deployment of Transiter can have multiple transit systems installed side-by-side.
-A transit system is installed using a YAML configuration file that 
-    contains basic metadata about the system (like its name),
-    the URLs of the data feeds,
-    and how to parse those data feeds (GTFS Static, GTFS Realtime, or a custom format).
+??? info "Changing the default port numbers"
+    The default port numbers (8080-8083) can be changed using the flags 
+    `--public-http-addr`,
+    `--public-grpc-addr`,
+    `--admin-http-addr`,
+    `--admin-grpc-addr`.
+    If you set any of these flags to `-`, Transiter won't run the associated API.
 
-For this tour, we're going to start by installing the BART system in San Francisco.
-The YAML configuration file is stored in Github, you can [inspect it here](https://github.com/jamespfennell/transiter-sfbart/blob/master/Transiter-SF-BART-config.yaml).
-The system in installed by sending a `PUT` HTTP request to the desired system ID.
-In this case we'll install the system using ID `bart`,
+
+### Transiter CLI
+
+We've already used the Transiter CLI to launch the Transiter server above (`go run . server`).
+The CLI has many other commands, all of which are client commands.
+These commands are used to interact with a running Transiter server.
+For example, we can list the currently installed Transit systems:
 
 ```
-curl -X PUT "localhost:8000/systems/bart?sync=true" \
-     -F 'config_file=https://raw.githubusercontent.com/jamespfennell/transiter-sfbart/master/Transiter-SF-BART-config.yaml'
+$ go run . list
+No transit systems installed.
 ```
 
-As you can see, we've provided a `config_file` form parameter that contains the URL of the config file.
-It's also possible to provide the config as a file upload using the same `config_file` form parameter.
+As expected, there is nothing to return
+  because there are no transit systems installed!
+Let's do that!
 
-The request will take a few seconds to complete;
-    most of the time is spent loading the BART's schedule into the database.
-After it finishes, hit the Transiter landing page again to get,
+## Installing transit systems
+
+Each deployment of Transiter can have multiple transit systems side-by-side.
+A transit system is installed by providing Transiter with a YAML configuration file for the system.
+This config contains basic metadata about the system like its name,
+    as well as URLs for the system's GTFS static and realtime feeds.
+
+We're going to start by installing the [PATH train](https://en.wikipedia.org/wiki/PATH_(rail_system)) in New York and New Jersey.
+The YAML configuration file for this system is included in
+  [Transiter's library of systems on GitHub](https://github.com/jamespfennell/transiter/blob/master/systems).
+We install it by provided the URL of the config to Transiter:
+
+```
+go run . install us-ny-path https://raw.githubusercontent.com/jamespfennell/transiter/master/systems/us-ny-path.yaml
+```
+
+The install will take a few seconds to complete, with
+    most of the time spent loading the PATH's schedule into the database.
+After it finishes, hit the Transiter root endpoint again:
 
 ```json
+$ curl localhost:8080
 {
   "transiter": {
-    "version": "0.4.5",
+    "version": "1.0.0-dev",
     "href": "https://github.com/jamespfennell/transiter",
-    "docs": {
-      "href": "https://demo.transiter.io/docs/"
-    }
   },
   "systems": {
     "count": 1,
@@ -148,54 +159,58 @@ After it finishes, hit the Transiter landing page again to get,
 ```
 
 It's installed! 
-Next, navigate to the list systems endpoint.
-The URL `http://localhost:8000/systems` is helpfully given in the JSON response.
-We get,
+Next, let's navigate to the list systems endpoint.
+The URL `http://localhost:8000/systems` was given in the response above.
+In general the Transiter API is designed with discoverability in mind.
+We get:
 
-```json
-[
-  {
-    "id": "bart",
-    "status": "ACTIVE",
-    "name": "San Francisco BART",
-    "href": "http://localhost:8000/systems/bart"
-  }
-]
 ```
-
-Now navigating to the system itself, we get,
-
-
-```json
+$ curl localhost:8000/systems
 {
-  "id": "bart",
-  "status": "ACTIVE",
-  "name": "San Francisco BART",
-  "agencies": {
-    "count": 1,
-    "href": "http://localhost:8000/systems/bart/agencies"
-  },
-  "feeds": {
-    "count": 3,
-    "href": "http://localhost:8000/systems/bart/feeds"
-  },
-  "routes": {
-    "count": 14,
-    "href": "http://localhost:8000/systems/bart/routes"
-  },
-  "stops": {
-    "count": 177,
-    "href": "http://localhost:8000/systems/bart/stops"
-  },
-  "transfers": {
-    "count": 0,
-    "href": "http://localhost:8000/systems/bart/transfers"
-  }
+  "systems":  [
+    {
+      "id":  "us-ny-path",
+      "resource":  null,
+      "name":  "Port Authority Trans-Hudson (PATH)",
+      "status":  "ACTIVE",
+      "agencies":  {
+        "count":  "1",
+        "href":  "https://demo.transiter.dev/systems/us-ny-path/agencies"
+      },
+      "feeds":  {
+        "count":  "2",
+        "href":  "https://demo.transiter.dev/systems/us-ny-path/feeds"
+      },
+      "routes":  {
+        "count":  "6",
+        "href":  "https://demo.transiter.dev/systems/us-ny-path/routes"
+      },
+      "stops":  {
+        "count":  "64",
+        "href":  "https://demo.transiter.dev/systems/us-ny-path/stops"
+      },
+      "transfers":  {
+        "count":  "0",
+        "href":  "https://demo.transiter.dev/systems/us-ny-path/transfers"
+      }
+    },
+  ]
 }
 ```
 
-This is an overview of the system, showing the number of various things like stops and routes,
-as well as URLs for those.
+This is an overview of the system, showing the number of various entities like stops and routes.
+All of these entities correspond to entities in the GTFS static and realtime specs.
+
+
+??? info "Installing systems using the HTTP admin API"
+    It's possible to install transit systems using the HTTP admin API by sending a `PUT` request
+    to the system endpoint:
+
+    ```
+    curl -X PUT localhost:8082/systems/us-ny-path -d '{"yaml_config": {"url": "https://raw.githubusercontent.com/jamespfennell/transiter/master/systems/us-ny-path.yaml"}}'
+    ```
+
+GOT TO HERE
 
 ## Explore route data
 
@@ -459,6 +474,8 @@ It's possible to search for more stops by passing a distance URL parameter to th
 
 ## Where to go next?
 
-- Create a transit system config for a system you're interested in.
+- Learn more about [Transiter's system configuration YAML format](systems.md).
 
-- Consult the API reference to find other endpoints and data that Transiter exposes.
+- Read advice about [deploying and monitoring Transiter](deployment.md).
+
+- Consult the [API reference](api/index.md) to discover more endpoints and data that Transiter exposes.
