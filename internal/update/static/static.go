@@ -34,7 +34,7 @@ func Update(ctx context.Context, updateCtx common.UpdateContext, data *gtfs.Stat
 	if err := updateTransfers(ctx, updateCtx, data.Transfers, stopIDToPk); err != nil {
 		return err
 	}
-	if err := updateSchedule(ctx, updateCtx, data.Services, stopIDToPk); err != nil {
+	if err := updateSchedule(ctx, updateCtx, data, routeIDToPk); err != nil {
 		return err
 	}
 	if err := servicemaps.UpdateStaticMaps(ctx, updateCtx.Querier, updateCtx.Logger, servicemaps.UpdateStaticMapsArgs{

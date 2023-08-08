@@ -65,3 +65,49 @@ func (q *Queries) InsertScheduledService(ctx context.Context, arg InsertSchedule
 	err := row.Scan(&pk)
 	return pk, err
 }
+
+const insertScheduledTrip = `-- name: InsertScheduledTrip :one
+INSERT INTO scheduled_trip 
+    (id, route_pk, service_pk, direction_id, bikes_allowed, block_id, headsign,
+    short_name, wheelchair_accessible)
+VALUES
+    ($1,
+    $2,
+    $3,
+    $4,
+    $5,
+    $6,
+    $7,
+    $8,
+    $9)
+RETURNING pk
+`
+
+type InsertScheduledTripParams struct {
+	ID                   string
+	RoutePk              int64
+	ServicePk            int64
+	DirectionID          pgtype.Bool
+	BikesAllowed         string
+	BlockID              pgtype.Text
+	Headsign             pgtype.Text
+	ShortName            pgtype.Text
+	WheelchairAccessible string
+}
+
+func (q *Queries) InsertScheduledTrip(ctx context.Context, arg InsertScheduledTripParams) (int64, error) {
+	row := q.db.QueryRow(ctx, insertScheduledTrip,
+		arg.ID,
+		arg.RoutePk,
+		arg.ServicePk,
+		arg.DirectionID,
+		arg.BikesAllowed,
+		arg.BlockID,
+		arg.Headsign,
+		arg.ShortName,
+		arg.WheelchairAccessible,
+	)
+	var pk int64
+	err := row.Scan(&pk)
+	return pk, err
+}
