@@ -98,13 +98,13 @@ type ScheduledService struct {
 	Pk        int64
 	ID        string
 	SystemPk  int64
-	Monday    pgtype.Bool
-	Tuesday   pgtype.Bool
-	Wednesday pgtype.Bool
-	Thursday  pgtype.Bool
-	Friday    pgtype.Bool
-	Saturday  pgtype.Bool
-	Sunday    pgtype.Bool
+	Monday    bool
+	Tuesday   bool
+	Wednesday bool
+	Thursday  bool
+	Friday    bool
+	Saturday  bool
+	Sunday    bool
 	EndDate   pgtype.Date
 	StartDate pgtype.Date
 	FeedPk    int64

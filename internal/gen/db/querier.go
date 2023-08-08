@@ -48,6 +48,7 @@ type Querier interface {
 	InsertAlertStop(ctx context.Context, arg InsertAlertStopParams) error
 	InsertFeed(ctx context.Context, arg InsertFeedParams) error
 	InsertRoute(ctx context.Context, arg InsertRouteParams) (int64, error)
+	InsertScheduledService(ctx context.Context, arg InsertScheduledServiceParams) (int64, error)
 	InsertServiceMap(ctx context.Context, arg InsertServiceMapParams) (int64, error)
 	InsertServiceMapConfig(ctx context.Context, arg InsertServiceMapConfigParams) error
 	InsertServiceMapStop(ctx context.Context, arg []InsertServiceMapStopParams) (int64, error)
