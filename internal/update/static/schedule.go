@@ -14,7 +14,12 @@ func updateSchedule(ctx context.Context, updateCtx common.UpdateContext, data *g
 	if err := updateCtx.Querier.DeleteScheduledServices(ctx, updateCtx.FeedPk); err != nil {
 		return err
 	}
-	// TODO: may need to delete existing schedules from other feeds
+	// TODOs
+	// (1) Delete existing schedules from other feeds
+	// (2) change the GTFS package to return all of the fields here
+	// (3) change the inserters to use the fields
+	// (4) add an integration test...or maybe cannot without adding an API
+	// (4) then try to performance optimize
 	serviceIDToPk := map[string]int64{}
 	for _, service := range data.Services {
 		pk, err := updateCtx.Querier.InsertScheduledService(ctx, db.InsertScheduledServiceParams{
