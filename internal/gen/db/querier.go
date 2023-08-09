@@ -18,6 +18,7 @@ type Querier interface {
 	CountTransfersInSystem(ctx context.Context, systemPk pgtype.Int8) (int64, error)
 	DeleteAlerts(ctx context.Context, alertPks []int64) error
 	DeleteFeed(ctx context.Context, pk int64) error
+	DeleteScheduledServices(ctx context.Context, feedPk int64) error
 	DeleteServiceMap(ctx context.Context, arg DeleteServiceMapParams) error
 	DeleteServiceMapConfig(ctx context.Context, pk int64) error
 	DeleteStaleAgencies(ctx context.Context, arg DeleteStaleAgenciesParams) error
@@ -50,6 +51,7 @@ type Querier interface {
 	InsertRoute(ctx context.Context, arg InsertRouteParams) (int64, error)
 	InsertScheduledService(ctx context.Context, arg InsertScheduledServiceParams) (int64, error)
 	InsertScheduledTrip(ctx context.Context, arg InsertScheduledTripParams) (int64, error)
+	InsertScheduledTripStopTime(ctx context.Context, arg []InsertScheduledTripStopTimeParams) (int64, error)
 	InsertServiceMap(ctx context.Context, arg InsertServiceMapParams) (int64, error)
 	InsertServiceMapConfig(ctx context.Context, arg InsertServiceMapConfigParams) error
 	InsertServiceMapStop(ctx context.Context, arg []InsertServiceMapStopParams) (int64, error)

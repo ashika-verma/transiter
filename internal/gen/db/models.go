@@ -148,16 +148,16 @@ type ScheduledTripStopTime struct {
 	Pk                    int64
 	TripPk                int64
 	StopPk                int64
-	ArrivalTime           pgtype.Time
-	DepartureTime         pgtype.Time
 	StopSequence          int32
-	ContinuousDropOff     string
-	ContinuousPickup      string
-	DropOffType           string
 	ExactTimes            bool
 	Headsign              pgtype.Text
-	PickupType            string
 	ShapeDistanceTraveled pgtype.Float8
+	ArrivalTime           pgtype.Int4
+	DepartureTime         pgtype.Int4
+	ContinuousDropOff     int16
+	ContinuousPickup      int16
+	DropOffType           int16
+	PickupType            int16
 }
 
 type ServiceMap struct {

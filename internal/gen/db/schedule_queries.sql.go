@@ -11,6 +11,15 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const deleteScheduledServices = `-- name: DeleteScheduledServices :exec
+DELETE FROM scheduled_service WHERE feed_pk = $1
+`
+
+func (q *Queries) DeleteScheduledServices(ctx context.Context, feedPk int64) error {
+	_, err := q.db.Exec(ctx, deleteScheduledServices, feedPk)
+	return err
+}
+
 const insertScheduledService = `-- name: InsertScheduledService :one
 INSERT INTO scheduled_service 
     (id, system_pk, feed_pk,
@@ -110,4 +119,19 @@ func (q *Queries) InsertScheduledTrip(ctx context.Context, arg InsertScheduledTr
 	var pk int64
 	err := row.Scan(&pk)
 	return pk, err
+}
+
+type InsertScheduledTripStopTimeParams struct {
+	TripPk                int64
+	StopPk                int64
+	ArrivalTime           pgtype.Int4
+	DepartureTime         pgtype.Int4
+	StopSequence          int32
+	ContinuousDropOff     int16
+	ContinuousPickup      int16
+	DropOffType           int16
+	ExactTimes            bool
+	Headsign              pgtype.Text
+	PickupType            int16
+	ShapeDistanceTraveled pgtype.Float8
 }
