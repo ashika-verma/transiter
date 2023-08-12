@@ -232,10 +232,17 @@ func main() {
 					}()
 					// Listen for the channel and cancel accordingly
 					go func() {
-						select {
-						case <-ch:
-							cancel()
-						case <-ctx.Done():
+						var cancelled bool
+						for {
+							select {
+							case <-ch:
+								if cancelled {
+									panic("double cancelled")
+								}
+								cancelled = true
+								cancel()
+							case <-ctx.Done():
+							}
 						}
 					}()
 					return server.Run(ctx, args)
