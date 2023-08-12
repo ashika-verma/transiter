@@ -133,9 +133,11 @@ func (s *DefaultScheduler) runWithClock(ctx context.Context, public api.PublicSe
 		systemResp, err := admin.GetSystemConfig(ctx, &api.GetSystemConfigRequest{SystemId: systemID})
 		if err != nil {
 			s, ok := status.FromError(err)
-			if !ok || s.Code() != codes.NotFound {
-				return fmt.Errorf("failed to get system config for system %s during scheduler reset: %w", systemID, err)
+			if ok && s.Code() == codes.NotFound {
+				stopScheduler(systemID)
+				return nil
 			}
+			return fmt.Errorf("failed to get system config for system %s during scheduler reset: %w", systemID, err)
 		}
 		agenciesResp, err := public.ListAgencies(ctx, &api.ListAgenciesRequest{SystemId: systemID})
 		if err != nil {
@@ -466,9 +468,11 @@ func NormalizeSchedulingPolicy(logger *slog.Logger, feedConfig *api.FeedConfig, 
 		}
 	case api.FeedConfig_DAILY:
 		// We check if the provided time is valid
-		if _, _, ok := parseDailyUpdateTime(feedConfig.GetDailyUpdateTime()); !ok {
-			logger.Error("could not parse provided time %q; will fall back to default", feedConfig.GetDailyUpdateTime())
-			feedConfig.DailyUpdateTime = ""
+		if feedConfig.GetDailyUpdateTime() != "" {
+			if _, _, ok := parseDailyUpdateTime(feedConfig.GetDailyUpdateTime()); !ok {
+				logger.Error(fmt.Sprintf("could not parse provided time %q; will fall back to default", feedConfig.GetDailyUpdateTime()))
+				feedConfig.DailyUpdateTime = ""
+			}
 		}
 		// Then, if there is no time provided we populate a default
 		if feedConfig.GetDailyUpdateTime() == "" {
@@ -479,7 +483,7 @@ func NormalizeSchedulingPolicy(logger *slog.Logger, feedConfig *api.FeedConfig, 
 		// We check if the provided timezone is valid
 		if tz := feedConfig.GetDailyUpdateTimezone(); tz != "" {
 			if _, err := time.LoadLocation(tz); err != nil {
-				logger.Error("could not parse provided timezone %q; will fall back to default", tz)
+				logger.Error(fmt.Sprintf("could not parse provided timezone %q; will fall back to default", tz))
 				feedConfig.DailyUpdateTimezone = ""
 			}
 		}
