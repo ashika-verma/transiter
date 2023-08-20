@@ -29,7 +29,7 @@ func (q *Queries) DeleteStaleStops(ctx context.Context, arg DeleteStaleStopsPara
 }
 
 const getStop = `-- name: GetStop :one
-SELECT stop.pk, stop.id, stop.system_pk, stop.parent_stop_pk, stop.name, stop.longitude, stop.latitude, stop.url, stop.code, stop.description, stop.platform_code, stop.timezone, stop.type, stop.wheelchair_boarding, stop.zone_id, stop.feed_pk FROM stop
+SELECT stop.pk, stop.id, stop.system_pk, stop.parent_stop_pk, stop.name, stop.longitude, stop.latitude, stop.url, stop.code, stop.description, stop.platform_code, stop.timezone, stop.type, stop.wheelchair_boarding, stop.zone_id, stop.feed_pk, stop.location FROM stop
     INNER JOIN system ON stop.system_pk = system.pk
     WHERE system.id = $1
     AND stop.id = $2
@@ -60,6 +60,7 @@ func (q *Queries) GetStop(ctx context.Context, arg GetStopParams) (Stop, error) 
 		&i.WheelchairBoarding,
 		&i.ZoneID,
 		&i.FeedPk,
+		&i.Location,
 	)
 	return i, err
 }
@@ -116,7 +117,7 @@ func (q *Queries) InsertStop(ctx context.Context, arg InsertStopParams) (int64, 
 }
 
 const listStops = `-- name: ListStops :many
-SELECT pk, id, system_pk, parent_stop_pk, name, longitude, latitude, url, code, description, platform_code, timezone, type, wheelchair_boarding, zone_id, feed_pk FROM stop
+SELECT pk, id, system_pk, parent_stop_pk, name, longitude, latitude, url, code, description, platform_code, timezone, type, wheelchair_boarding, zone_id, feed_pk, location FROM stop
 WHERE system_pk = $1
   AND id >= $2
   AND (
@@ -167,6 +168,7 @@ func (q *Queries) ListStops(ctx context.Context, arg ListStopsParams) ([]Stop, e
 			&i.WheelchairBoarding,
 			&i.ZoneID,
 			&i.FeedPk,
+			&i.Location,
 		); err != nil {
 			return nil, err
 		}
@@ -225,7 +227,7 @@ WITH distance AS (
   FROM stop
   WHERE stop.system_pk = $5
 )
-SELECT stop.pk, stop.id, stop.system_pk, stop.parent_stop_pk, stop.name, stop.longitude, stop.latitude, stop.url, stop.code, stop.description, stop.platform_code, stop.timezone, stop.type, stop.wheelchair_boarding, stop.zone_id, stop.feed_pk FROM stop
+SELECT stop.pk, stop.id, stop.system_pk, stop.parent_stop_pk, stop.name, stop.longitude, stop.latitude, stop.url, stop.code, stop.description, stop.platform_code, stop.timezone, stop.type, stop.wheelchair_boarding, stop.zone_id, stop.feed_pk, stop.location FROM stop
 INNER JOIN distance ON stop.pk = distance.stop_pk
 AND distance.val <= $1::numeric
 ORDER BY distance.val
@@ -272,6 +274,7 @@ func (q *Queries) ListStops_Geographic(ctx context.Context, arg ListStops_Geogra
 			&i.WheelchairBoarding,
 			&i.ZoneID,
 			&i.FeedPk,
+			&i.Location,
 		); err != nil {
 			return nil, err
 		}

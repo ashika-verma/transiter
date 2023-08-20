@@ -204,6 +204,7 @@ type Stop struct {
 	WheelchairBoarding pgtype.Bool
 	ZoneID             pgtype.Text
 	FeedPk             int64
+	Location           interface{}
 }
 
 type StopHeadsignRule struct {
