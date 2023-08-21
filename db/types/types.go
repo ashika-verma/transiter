@@ -22,6 +22,15 @@ type Geography struct {
 	Latitude  float64
 }
 
+func NewPoint(longitude float64, latitude float64) Geography {
+	return Geography{
+		Valid:     true,
+		Type:      Point,
+		Longitude: longitude,
+		Latitude:  latitude,
+	}
+}
+
 func (g *Geography) NullableLongitude() *float64 {
 	if !g.Valid {
 		return nil
