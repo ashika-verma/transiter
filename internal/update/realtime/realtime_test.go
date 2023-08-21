@@ -912,7 +912,7 @@ func TestUpdate(t *testing.T) {
 				}
 				err := Update(ctx, updateCtx, update.data)
 				if err != nil {
-					t.Fatalf("Update(trip update version %d) got = %v, want = <nil>", err, i)
+					t.Fatalf("Update(trip update version %d) got = %+v, want = <nil>", i, err)
 				}
 			}
 

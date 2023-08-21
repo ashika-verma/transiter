@@ -1266,7 +1266,7 @@ func TestUpdate(t *testing.T) {
 			for i, update := range tc.updates {
 				err := Update(ctx, updateCtx, update)
 				if err != nil {
-					t.Fatalf("Update(update %d) got = %v, want = <nil>", err, i)
+					t.Fatalf("Update(update %d) got = %+v, want = <nil>", i, err)
 				}
 			}
 

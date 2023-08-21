@@ -87,5 +87,6 @@ func (g Geography) Value() (driver.Value, error) {
 	binary.LittleEndian.PutUint32(b[5:9], uint32(4326))
 	binary.LittleEndian.PutUint64(b[9:17], math.Float64bits(g.Longitude))
 	binary.LittleEndian.PutUint64(b[17:25], math.Float64bits(g.Latitude))
+	// return b, nil
 	return hex.EncodeToString(b), nil
 }
