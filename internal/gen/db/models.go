@@ -6,6 +6,7 @@ package db
 
 import (
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jamespfennell/transiter/db/types"
 )
 
 type Agency struct {
@@ -193,8 +194,6 @@ type Stop struct {
 	SystemPk           int64
 	ParentStopPk       pgtype.Int8
 	Name               pgtype.Text
-	Longitude          pgtype.Numeric
-	Latitude           pgtype.Numeric
 	Url                pgtype.Text
 	Code               pgtype.Text
 	Description        pgtype.Text
@@ -204,7 +203,7 @@ type Stop struct {
 	WheelchairBoarding pgtype.Bool
 	ZoneID             pgtype.Text
 	FeedPk             int64
-	Location           interface{}
+	Location           types.Geography
 }
 
 type StopHeadsignRule struct {

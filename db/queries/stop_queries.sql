@@ -1,11 +1,12 @@
 -- name: InsertStop :one
 INSERT INTO stop
-    (id, system_pk, feed_pk, name, longitude, latitude,
+    (id, system_pk, feed_pk, name, location,
      url, code, description, platform_code, timezone, type,
      wheelchair_boarding, zone_id)
 VALUES
-    (sqlc.arg(id), sqlc.arg(system_pk), sqlc.arg(feed_pk), sqlc.arg(name), sqlc.arg(longitude),
-     sqlc.arg(latitude), sqlc.arg(url), sqlc.arg(code), sqlc.arg(description), sqlc.arg(platform_code),
+    (sqlc.arg(id), sqlc.arg(system_pk), sqlc.arg(feed_pk), sqlc.arg(name),
+     ST_SetSRID(ST_MakePoint(sqlc.arg(longitude)::float, sqlc.arg(latitude)::float), 4326),
+     sqlc.arg(url), sqlc.arg(code), sqlc.arg(description), sqlc.arg(platform_code),
      sqlc.arg(timezone), sqlc.arg(type), sqlc.arg(wheelchair_boarding), sqlc.arg(zone_id))
 RETURNING pk;
 
@@ -13,8 +14,7 @@ RETURNING pk;
 UPDATE stop SET
     feed_pk = sqlc.arg(feed_pk),
     name = sqlc.arg(name),
-    longitude = sqlc.arg(longitude),
-    latitude = sqlc.arg(latitude),
+    location = ST_SetSRID(ST_MakePoint(sqlc.arg(longitude), sqlc.arg(latitude)), 4326),
     url = sqlc.arg(url),
     code = sqlc.arg(code),
     description = sqlc.arg(description),

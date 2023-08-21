@@ -157,13 +157,13 @@ func buildStopsResponse(ctx context.Context, r *Context, systemID string, stops 
 			parent = stopPkToApiPreview[stop.ParentStopPk.Int64]
 		}
 		stop := &api.Stop{
-			Id:                 stop.ID,
-			Code:               convert.SQLNullString(stop.Code),
-			Name:               convert.SQLNullString(stop.Name),
-			Description:        convert.SQLNullString(stop.Description),
-			ZoneId:             convert.SQLNullString(stop.ZoneID),
-			Longitude:          convert.SQLGps(stop.Longitude),
-			Latitude:           convert.SQLGps(stop.Latitude),
+			Id:          stop.ID,
+			Code:        convert.SQLNullString(stop.Code),
+			Name:        convert.SQLNullString(stop.Name),
+			Description: convert.SQLNullString(stop.Description),
+			ZoneId:      convert.SQLNullString(stop.ZoneID),
+			// Longitude:          convert.SQLGps(stop.Longitude),
+			// Latitude:           convert.SQLGps(stop.Latitude),
 			Url:                convert.SQLNullString(stop.Url),
 			Type:               convert.StopType(stop.Type),
 			Timezone:           convert.SQLNullString(stop.Timezone),

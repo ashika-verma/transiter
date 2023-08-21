@@ -7,3 +7,7 @@ packages:
     schema: "db/schema/"
     queries: "db/queries/"
     emit_interface: true
+
+overrides:
+  - db_type: "geography"
+    go_type: "github.com/jamespfennell/transiter/db/types.Geography"

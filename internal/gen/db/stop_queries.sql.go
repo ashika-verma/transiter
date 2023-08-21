@@ -29,7 +29,7 @@ func (q *Queries) DeleteStaleStops(ctx context.Context, arg DeleteStaleStopsPara
 }
 
 const getStop = `-- name: GetStop :one
-SELECT stop.pk, stop.id, stop.system_pk, stop.parent_stop_pk, stop.name, stop.longitude, stop.latitude, stop.url, stop.code, stop.description, stop.platform_code, stop.timezone, stop.type, stop.wheelchair_boarding, stop.zone_id, stop.feed_pk, stop.location FROM stop
+SELECT stop.pk, stop.id, stop.system_pk, stop.parent_stop_pk, stop.name, stop.url, stop.code, stop.description, stop.platform_code, stop.timezone, stop.type, stop.wheelchair_boarding, stop.zone_id, stop.feed_pk, stop.location FROM stop
     INNER JOIN system ON stop.system_pk = system.pk
     WHERE system.id = $1
     AND stop.id = $2
@@ -49,8 +49,6 @@ func (q *Queries) GetStop(ctx context.Context, arg GetStopParams) (Stop, error) 
 		&i.SystemPk,
 		&i.ParentStopPk,
 		&i.Name,
-		&i.Longitude,
-		&i.Latitude,
 		&i.Url,
 		&i.Code,
 		&i.Description,
@@ -67,12 +65,13 @@ func (q *Queries) GetStop(ctx context.Context, arg GetStopParams) (Stop, error) 
 
 const insertStop = `-- name: InsertStop :one
 INSERT INTO stop
-    (id, system_pk, feed_pk, name, longitude, latitude,
+    (id, system_pk, feed_pk, name, location,
      url, code, description, platform_code, timezone, type,
      wheelchair_boarding, zone_id)
 VALUES
-    ($1, $2, $3, $4, $5,
-     $6, $7, $8, $9, $10,
+    ($1, $2, $3, $4,
+     ST_SetSRID(ST_MakePoint($5::float, $6::float), 4326),
+     $7, $8, $9, $10,
      $11, $12, $13, $14)
 RETURNING pk
 `
@@ -82,8 +81,8 @@ type InsertStopParams struct {
 	SystemPk           int64
 	FeedPk             int64
 	Name               pgtype.Text
-	Longitude          pgtype.Numeric
-	Latitude           pgtype.Numeric
+	Longitude          float64
+	Latitude           float64
 	Url                pgtype.Text
 	Code               pgtype.Text
 	Description        pgtype.Text
@@ -117,7 +116,7 @@ func (q *Queries) InsertStop(ctx context.Context, arg InsertStopParams) (int64, 
 }
 
 const listStops = `-- name: ListStops :many
-SELECT pk, id, system_pk, parent_stop_pk, name, longitude, latitude, url, code, description, platform_code, timezone, type, wheelchair_boarding, zone_id, feed_pk, location FROM stop
+SELECT pk, id, system_pk, parent_stop_pk, name, url, code, description, platform_code, timezone, type, wheelchair_boarding, zone_id, feed_pk, location FROM stop
 WHERE system_pk = $1
   AND id >= $2
   AND (
@@ -157,8 +156,6 @@ func (q *Queries) ListStops(ctx context.Context, arg ListStopsParams) ([]Stop, e
 			&i.SystemPk,
 			&i.ParentStopPk,
 			&i.Name,
-			&i.Longitude,
-			&i.Latitude,
 			&i.Url,
 			&i.Code,
 			&i.Description,
@@ -227,7 +224,7 @@ WITH distance AS (
   FROM stop
   WHERE stop.system_pk = $5
 )
-SELECT stop.pk, stop.id, stop.system_pk, stop.parent_stop_pk, stop.name, stop.longitude, stop.latitude, stop.url, stop.code, stop.description, stop.platform_code, stop.timezone, stop.type, stop.wheelchair_boarding, stop.zone_id, stop.feed_pk, stop.location FROM stop
+SELECT stop.pk, stop.id, stop.system_pk, stop.parent_stop_pk, stop.name, stop.url, stop.code, stop.description, stop.platform_code, stop.timezone, stop.type, stop.wheelchair_boarding, stop.zone_id, stop.feed_pk, stop.location FROM stop
 INNER JOIN distance ON stop.pk = distance.stop_pk
 AND distance.val <= $1::numeric
 ORDER BY distance.val
@@ -263,8 +260,6 @@ func (q *Queries) ListStops_Geographic(ctx context.Context, arg ListStops_Geogra
 			&i.SystemPk,
 			&i.ParentStopPk,
 			&i.Name,
-			&i.Longitude,
-			&i.Latitude,
 			&i.Url,
 			&i.Code,
 			&i.Description,
@@ -559,8 +554,7 @@ const updateStop = `-- name: UpdateStop :exec
 UPDATE stop SET
     feed_pk = $1,
     name = $2,
-    longitude = $3,
-    latitude = $4,
+    location = ST_SetSRID(ST_MakePoint($3, $4), 4326),
     url = $5,
     code = $6,
     description = $7,
@@ -577,8 +571,8 @@ WHERE
 type UpdateStopParams struct {
 	FeedPk             int64
 	Name               pgtype.Text
-	Longitude          pgtype.Numeric
-	Latitude           pgtype.Numeric
+	Longitude          interface{}
+	Latitude           interface{}
 	Url                pgtype.Text
 	Code               pgtype.Text
 	Description        pgtype.Text
