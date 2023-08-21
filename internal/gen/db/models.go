@@ -278,5 +278,5 @@ type Vehicle struct {
 	OccupancyStatus     pgtype.Text
 	FeedPk              int64
 	OccupancyPercentage pgtype.Int4
-	Location            interface{}
+	Location            types.Geography
 }

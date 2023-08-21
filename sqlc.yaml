@@ -11,5 +11,7 @@ packages:
 overrides:
   - column: "stop.location"
     go_type: "github.com/jamespfennell/transiter/db/types.Geography"
+  - column: "vehicle.location"
+    go_type: "github.com/jamespfennell/transiter/db/types.Geography"
   - db_type: "geography"
     go_type: "github.com/jamespfennell/transiter/db/types.Geography"

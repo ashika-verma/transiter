@@ -75,7 +75,7 @@ type GetVehicleRow struct {
 	OccupancyStatus     pgtype.Text
 	FeedPk              int64
 	OccupancyPercentage pgtype.Int4
-	Location            interface{}
+	Location            types.Geography
 	StopID              pgtype.Text
 	StopName            pgtype.Text
 	TripID              pgtype.Text
@@ -123,7 +123,7 @@ type InsertVehicleParams struct {
 	Label               pgtype.Text
 	LicensePlate        pgtype.Text
 	CurrentStatus       pgtype.Text
-	Location            interface{}
+	Location            types.Geography
 	Bearing             pgtype.Float4
 	Odometer            pgtype.Float8
 	Speed               pgtype.Float4
@@ -184,7 +184,7 @@ type ListVehiclesRow struct {
 	OccupancyStatus     pgtype.Text
 	FeedPk              int64
 	OccupancyPercentage pgtype.Int4
-	Location            interface{}
+	Location            types.Geography
 	StopID              pgtype.Text
 	StopName            pgtype.Text
 	TripID              pgtype.Text
@@ -294,7 +294,7 @@ type ListVehicles_GeographicRow struct {
 	OccupancyStatus     pgtype.Text
 	FeedPk              int64
 	OccupancyPercentage pgtype.Int4
-	Location            interface{}
+	Location            types.Geography
 	StopID              pgtype.Text
 	StopName            pgtype.Text
 	TripID              pgtype.Text
