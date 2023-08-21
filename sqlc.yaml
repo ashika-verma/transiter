@@ -9,5 +9,7 @@ packages:
     emit_interface: true
 
 overrides:
+  - column: "stop.location"
+    go_type: "github.com/jamespfennell/transiter/db/types.Geography"
   - db_type: "geography"
     go_type: "github.com/jamespfennell/transiter/db/types.Geography"
