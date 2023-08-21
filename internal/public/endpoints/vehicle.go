@@ -162,8 +162,8 @@ func buildApiVehicles(
 				nullRouteReferences(r, vehicle.RouteID, vehicle.RouteColor, system.ID),
 				vehicle.TripDirectionID.Bool,
 			),
-			// Latitude:     vehicle.Location   convert.SQLGps(vehicle.Latitude),
-			// Longitude:       convert.SQLGps(vehicle.Longitude), TODO
+			Longitude:       vehicle.Location.NullableLongitude(),
+			Latitude:        vehicle.Location.NullableLatitude(),
 			Bearing:         convert.SQLNullFloat4(vehicle.Bearing),
 			Odometer:        convert.SQLNullFloat8(vehicle.Odometer),
 			Speed:           convert.SQLNullFloat4(vehicle.Speed),
