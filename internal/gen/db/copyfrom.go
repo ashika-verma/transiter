@@ -196,8 +196,7 @@ func (r iteratorForInsertVehicle) Values() ([]interface{}, error) {
 		r.rows[0].Label,
 		r.rows[0].LicensePlate,
 		r.rows[0].CurrentStatus,
-		r.rows[0].Latitude,
-		r.rows[0].Longitude,
+		r.rows[0].Location,
 		r.rows[0].Bearing,
 		r.rows[0].Odometer,
 		r.rows[0].Speed,
@@ -216,5 +215,5 @@ func (r iteratorForInsertVehicle) Err() error {
 }
 
 func (q *Queries) InsertVehicle(ctx context.Context, arg []InsertVehicleParams) (int64, error) {
-	return q.db.CopyFrom(ctx, []string{"vehicle"}, []string{"id", "system_pk", "trip_pk", "label", "license_plate", "current_status", "latitude", "longitude", "bearing", "odometer", "speed", "congestion_level", "updated_at", "current_stop_pk", "current_stop_sequence", "occupancy_status", "feed_pk", "occupancy_percentage"}, &iteratorForInsertVehicle{rows: arg})
+	return q.db.CopyFrom(ctx, []string{"vehicle"}, []string{"id", "system_pk", "trip_pk", "label", "license_plate", "current_status", "location", "bearing", "odometer", "speed", "congestion_level", "updated_at", "current_stop_pk", "current_stop_sequence", "occupancy_status", "feed_pk", "occupancy_percentage"}, &iteratorForInsertVehicle{rows: arg})
 }

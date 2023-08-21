@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jamespfennell/transiter/db/types"
 )
 
 const deleteStaleStops = `-- name: DeleteStaleStops :exec
@@ -70,9 +71,9 @@ INSERT INTO stop
      wheelchair_boarding, zone_id)
 VALUES
     ($1, $2, $3, $4,
-     ST_SetSRID(ST_MakePoint($5::float, $6::float), 4326),
-     $7, $8, $9, $10,
-     $11, $12, $13, $14)
+     $5::geography,
+     $6, $7, $8, $9,
+     $10, $11, $12, $13)
 RETURNING pk
 `
 
@@ -81,8 +82,7 @@ type InsertStopParams struct {
 	SystemPk           int64
 	FeedPk             int64
 	Name               pgtype.Text
-	Longitude          float64
-	Latitude           float64
+	Location           types.Geography
 	Url                pgtype.Text
 	Code               pgtype.Text
 	Description        pgtype.Text
@@ -99,8 +99,7 @@ func (q *Queries) InsertStop(ctx context.Context, arg InsertStopParams) (int64, 
 		arg.SystemPk,
 		arg.FeedPk,
 		arg.Name,
-		arg.Longitude,
-		arg.Latitude,
+		arg.Location,
 		arg.Url,
 		arg.Code,
 		arg.Description,
@@ -220,22 +219,21 @@ const listStops_Geographic = `-- name: ListStops_Geographic :many
 WITH distance AS (
   SELECT
   pk stop_pk,
-  (6371 * acos(cos(radians(latitude)) * cos(radians($3::numeric)) * cos(radians($4::numeric) - radians(longitude)) + sin(radians(latitude)) * sin(radians($3::numeric)))) val
+  ST_Distance($3::geography, location) val
   FROM stop
-  WHERE stop.system_pk = $5
+  WHERE stop.system_pk = $4 AND location IS NOT NULL
 )
 SELECT stop.pk, stop.id, stop.system_pk, stop.parent_stop_pk, stop.name, stop.url, stop.code, stop.description, stop.platform_code, stop.timezone, stop.type, stop.wheelchair_boarding, stop.zone_id, stop.feed_pk, stop.location FROM stop
 INNER JOIN distance ON stop.pk = distance.stop_pk
-AND distance.val <= $1::numeric
+AND distance.val <= $1::float
 ORDER BY distance.val
 LIMIT $2
 `
 
 type ListStops_GeographicParams struct {
-	MaxDistance pgtype.Numeric
+	MaxDistance float64
 	MaxResults  int32
-	Latitude    pgtype.Numeric
-	Longitude   pgtype.Numeric
+	Base        types.Geography
 	SystemPk    int64
 }
 
@@ -243,8 +241,7 @@ func (q *Queries) ListStops_Geographic(ctx context.Context, arg ListStops_Geogra
 	rows, err := q.db.Query(ctx, listStops_Geographic,
 		arg.MaxDistance,
 		arg.MaxResults,
-		arg.Latitude,
-		arg.Longitude,
+		arg.Base,
 		arg.SystemPk,
 	)
 	if err != nil {
@@ -284,8 +281,7 @@ func (q *Queries) ListStops_Geographic(ctx context.Context, arg ListStops_Geogra
 const listTripStopTimesByStops = `-- name: ListTripStopTimesByStops :many
 SELECT trip_stop_time.pk, trip_stop_time.stop_pk, trip_stop_time.trip_pk, trip_stop_time.arrival_time, trip_stop_time.arrival_delay, trip_stop_time.arrival_uncertainty, trip_stop_time.departure_time, trip_stop_time.departure_delay, trip_stop_time.departure_uncertainty, trip_stop_time.stop_sequence, trip_stop_time.track, trip_stop_time.headsign, trip_stop_time.past,
        trip.pk, trip.id, trip.route_pk, trip.direction_id, trip.started_at, trip.gtfs_hash, trip.feed_pk, vehicle.id vehicle_id,
-       vehicle.latitude vehicle_latitude,
-       vehicle.longitude vehicle_longitude,
+       vehicle.location vehicle_location,
        vehicle.bearing vehicle_bearing,
        vehicle.updated_at vehicle_updated_at
     FROM trip_stop_time
@@ -318,8 +314,7 @@ type ListTripStopTimesByStopsRow struct {
 	GtfsHash             string
 	FeedPk               int64
 	VehicleID            pgtype.Text
-	VehicleLatitude      pgtype.Numeric
-	VehicleLongitude     pgtype.Numeric
+	VehicleLocation      interface{}
 	VehicleBearing       pgtype.Float4
 	VehicleUpdatedAt     pgtype.Timestamptz
 }
@@ -355,8 +350,7 @@ func (q *Queries) ListTripStopTimesByStops(ctx context.Context, stopPks []int64)
 			&i.GtfsHash,
 			&i.FeedPk,
 			&i.VehicleID,
-			&i.VehicleLatitude,
-			&i.VehicleLongitude,
+			&i.VehicleLocation,
 			&i.VehicleBearing,
 			&i.VehicleUpdatedAt,
 		); err != nil {
@@ -554,25 +548,24 @@ const updateStop = `-- name: UpdateStop :exec
 UPDATE stop SET
     feed_pk = $1,
     name = $2,
-    location = ST_SetSRID(ST_MakePoint($3, $4), 4326),
-    url = $5,
-    code = $6,
-    description = $7,
-    platform_code = $8,
-    timezone = $9,
-    type = $10,
-    wheelchair_boarding = $11,
-    zone_id = $12,
+    location = $3::geography,
+    url = $4,
+    code = $5,
+    description = $6,
+    platform_code = $7,
+    timezone = $8,
+    type = $9,
+    wheelchair_boarding = $10,
+    zone_id = $11,
     parent_stop_pk = NULL
 WHERE
-    pk = $13
+    pk = $12
 `
 
 type UpdateStopParams struct {
 	FeedPk             int64
 	Name               pgtype.Text
-	Longitude          interface{}
-	Latitude           interface{}
+	Location           types.Geography
 	Url                pgtype.Text
 	Code               pgtype.Text
 	Description        pgtype.Text
@@ -588,8 +581,7 @@ func (q *Queries) UpdateStop(ctx context.Context, arg UpdateStopParams) error {
 	_, err := q.db.Exec(ctx, updateStop,
 		arg.FeedPk,
 		arg.Name,
-		arg.Longitude,
-		arg.Latitude,
+		arg.Location,
 		arg.Url,
 		arg.Code,
 		arg.Description,

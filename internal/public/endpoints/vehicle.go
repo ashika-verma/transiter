@@ -41,9 +41,8 @@ func ListVehicles(ctx context.Context, r *Context, req *api.ListVehiclesRequest)
 		dbVehiclesGeo, err := r.Querier.ListVehicles_Geographic(ctx, db.ListVehicles_GeographicParams{
 			SystemPk:    system.Pk,
 			NumVehicles: numVehicles,
-			Latitude:    convert.Gps(req.Latitude),
-			Longitude:   convert.Gps(req.Longitude),
-			MaxDistance: convert.Gps(req.MaxDistance),
+			Base:        convert.Gps(req.Longitude, req.Latitude),
+			MaxDistance: *req.MaxDistance,
 		})
 
 		for _, dbVehicle := range dbVehiclesGeo {
@@ -52,8 +51,7 @@ func ListVehicles(ctx context.Context, r *Context, req *api.ListVehiclesRequest)
 				Label:               dbVehicle.Label,
 				LicensePlate:        dbVehicle.LicensePlate,
 				CurrentStatus:       dbVehicle.CurrentStatus,
-				Latitude:            dbVehicle.Latitude,
-				Longitude:           dbVehicle.Longitude,
+				Location:            dbVehicle.Location,
 				Bearing:             dbVehicle.Bearing,
 				Odometer:            dbVehicle.Odometer,
 				Speed:               dbVehicle.Speed,
@@ -124,8 +122,7 @@ func GetVehicle(ctx context.Context, r *Context, req *api.GetVehicleRequest) (*a
 			Label:               dbVehicle.Label,
 			LicensePlate:        dbVehicle.LicensePlate,
 			CurrentStatus:       dbVehicle.CurrentStatus,
-			Latitude:            dbVehicle.Latitude,
-			Longitude:           dbVehicle.Longitude,
+			Location:            dbVehicle.Location,
 			Bearing:             dbVehicle.Bearing,
 			Odometer:            dbVehicle.Odometer,
 			Speed:               dbVehicle.Speed,
@@ -165,8 +162,8 @@ func buildApiVehicles(
 				nullRouteReferences(r, vehicle.RouteID, vehicle.RouteColor, system.ID),
 				vehicle.TripDirectionID.Bool,
 			),
-			Latitude:        convert.SQLGps(vehicle.Latitude),
-			Longitude:       convert.SQLGps(vehicle.Longitude),
+			// Latitude:     vehicle.Location   convert.SQLGps(vehicle.Latitude),
+			// Longitude:       convert.SQLGps(vehicle.Longitude), TODO
 			Bearing:         convert.SQLNullFloat4(vehicle.Bearing),
 			Odometer:        convert.SQLNullFloat8(vehicle.Odometer),
 			Speed:           convert.SQLNullFloat4(vehicle.Speed),

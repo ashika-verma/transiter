@@ -5,7 +5,7 @@ INSERT INTO stop
      wheelchair_boarding, zone_id)
 VALUES
     (sqlc.arg(id), sqlc.arg(system_pk), sqlc.arg(feed_pk), sqlc.arg(name),
-     ST_SetSRID(ST_MakePoint(sqlc.arg(longitude)::float, sqlc.arg(latitude)::float), 4326),
+     sqlc.arg(location)::geography,
      sqlc.arg(url), sqlc.arg(code), sqlc.arg(description), sqlc.arg(platform_code),
      sqlc.arg(timezone), sqlc.arg(type), sqlc.arg(wheelchair_boarding), sqlc.arg(zone_id))
 RETURNING pk;
@@ -14,7 +14,7 @@ RETURNING pk;
 UPDATE stop SET
     feed_pk = sqlc.arg(feed_pk),
     name = sqlc.arg(name),
-    location = ST_SetSRID(ST_MakePoint(sqlc.arg(longitude), sqlc.arg(latitude)), 4326),
+    location = sqlc.arg(location)::geography,
     url = sqlc.arg(url),
     code = sqlc.arg(code),
     description = sqlc.arg(description),
@@ -54,13 +54,13 @@ LIMIT sqlc.arg(num_stops);
 WITH distance AS (
   SELECT
   pk stop_pk,
-  (6371 * acos(cos(radians(latitude)) * cos(radians(sqlc.arg(latitude)::numeric)) * cos(radians(sqlc.arg(longitude)::numeric) - radians(longitude)) + sin(radians(latitude)) * sin(radians(sqlc.arg(latitude)::numeric)))) val
+  ST_Distance(sqlc.arg(base)::geography, location) val
   FROM stop
-  WHERE stop.system_pk = sqlc.arg(system_pk)
+  WHERE stop.system_pk = sqlc.arg(system_pk) AND location IS NOT NULL
 )
 SELECT stop.* FROM stop
 INNER JOIN distance ON stop.pk = distance.stop_pk
-AND distance.val <= sqlc.arg(max_distance)::numeric
+AND distance.val <= sqlc.arg(max_distance)::float
 ORDER BY distance.val
 LIMIT sqlc.arg(max_results);
 
@@ -73,8 +73,7 @@ SELECT stop.* FROM stop
 -- name: ListTripStopTimesByStops :many
 SELECT trip_stop_time.*,
        trip.*, vehicle.id vehicle_id,
-       vehicle.latitude vehicle_latitude,
-       vehicle.longitude vehicle_longitude,
+       vehicle.location vehicle_location,
        vehicle.bearing vehicle_bearing,
        vehicle.updated_at vehicle_updated_at
     FROM trip_stop_time

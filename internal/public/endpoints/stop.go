@@ -45,9 +45,8 @@ func ListStops(ctx context.Context, r *Context, req *api.ListStopsRequest) (*api
 		}
 		stops, err = r.Querier.ListStops_Geographic(ctx, db.ListStops_GeographicParams{
 			SystemPk:    system.Pk,
-			Latitude:    convert.Gps(req.Latitude),
-			Longitude:   convert.Gps(req.Longitude),
-			MaxDistance: convert.Gps(req.MaxDistance),
+			Base:        convert.Gps(req.Longitude, req.Latitude),
+			MaxDistance: *req.MaxDistance,
 			MaxResults:  numStops,
 		})
 	} else {

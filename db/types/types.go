@@ -2,6 +2,7 @@
 package types
 
 import (
+	"database/sql/driver"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
@@ -15,8 +16,24 @@ const (
 )
 
 type Geography struct {
+	Valid     bool
+	Type      GeographyType
 	Longitude float64
 	Latitude  float64
+}
+
+func (g *Geography) NullableLongitude() *float64 {
+	if !g.Valid {
+		return nil
+	}
+	return &g.Longitude
+}
+
+func (g *Geography) NullableLatitude() *float64 {
+	if !g.Valid {
+		return nil
+	}
+	return &g.Latitude
 }
 
 func (g *Geography) Scan(src any) error {
@@ -38,10 +55,24 @@ func (g *Geography) Scan(src any) error {
 	geographyType := GeographyType(byteOrder.Uint32(b[1:5]))
 	switch geographyType {
 	case Point:
-		g.Latitude = math.Float64frombits(byteOrder.Uint64(b[9:17]))
-		g.Longitude = math.Float64frombits(byteOrder.Uint64(b[17:25]))
+		g.Valid = true
+		g.Type = Point
+		g.Longitude = math.Float64frombits(byteOrder.Uint64(b[9:17]))
+		g.Latitude = math.Float64frombits(byteOrder.Uint64(b[17:25]))
 		return nil
 	default:
 		return fmt.Errorf("unsupported PostGIS type code 0x%x", geographyType)
 	}
+}
+
+func (g *Geography) Value() (driver.Value, error) {
+	if !g.Valid {
+		return nil, nil
+	}
+	b := make([]byte, 25)
+	binary.LittleEndian.PutUint32(b[1:5], uint32(Point))
+	binary.LittleEndian.PutUint32(b[5:9], uint32(4326))
+	binary.LittleEndian.PutUint64(b[9:17], math.Float64bits(g.Longitude))
+	binary.LittleEndian.PutUint64(b[17:25], math.Float64bits(g.Latitude))
+	return b, nil
 }

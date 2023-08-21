@@ -104,8 +104,7 @@ WITH shapes_for_scheduled_trips_in_system AS (
 )
 SELECT trip.pk, trip.id, trip.route_pk, trip.direction_id, trip.started_at, trip.gtfs_hash, trip.feed_pk,
        vehicle.id as vehicle_id,
-       vehicle.latitude as vehicle_latitude,
-       vehicle.longitude as vehicle_longitude,
+       vehicle.location as vehicle_location,
        vehicle.bearing as vehicle_bearing,
        vehicle.updated_at as vehicle_updated_at,
        shapes_for_scheduled_trips_in_system.shape_id as shape_id
@@ -132,8 +131,7 @@ type GetTripRow struct {
 	GtfsHash         string
 	FeedPk           int64
 	VehicleID        pgtype.Text
-	VehicleLatitude  pgtype.Numeric
-	VehicleLongitude pgtype.Numeric
+	VehicleLocation  interface{}
 	VehicleBearing   pgtype.Float4
 	VehicleUpdatedAt pgtype.Timestamptz
 	ShapeID          pgtype.Text
@@ -151,8 +149,7 @@ func (q *Queries) GetTrip(ctx context.Context, arg GetTripParams) (GetTripRow, e
 		&i.GtfsHash,
 		&i.FeedPk,
 		&i.VehicleID,
-		&i.VehicleLatitude,
-		&i.VehicleLongitude,
+		&i.VehicleLocation,
 		&i.VehicleBearing,
 		&i.VehicleUpdatedAt,
 		&i.ShapeID,
@@ -355,8 +352,7 @@ WITH shapes_for_scheduled_trips_in_system AS (
 )
 SELECT trip.pk, trip.id, trip.route_pk, trip.direction_id, trip.started_at, trip.gtfs_hash, trip.feed_pk,
        vehicle.id as vehicle_id,
-       vehicle.latitude as vehicle_latitude,
-       vehicle.longitude as vehicle_longitude,
+       vehicle.location as vehicle_location,
        vehicle.bearing as vehicle_bearing,
        vehicle.updated_at as vehicle_updated_at,
        shapes_for_scheduled_trips_in_system.shape_id as shape_id
@@ -382,8 +378,7 @@ type ListTripsRow struct {
 	GtfsHash         string
 	FeedPk           int64
 	VehicleID        pgtype.Text
-	VehicleLatitude  pgtype.Numeric
-	VehicleLongitude pgtype.Numeric
+	VehicleLocation  interface{}
 	VehicleBearing   pgtype.Float4
 	VehicleUpdatedAt pgtype.Timestamptz
 	ShapeID          pgtype.Text
@@ -407,8 +402,7 @@ func (q *Queries) ListTrips(ctx context.Context, arg ListTripsParams) ([]ListTri
 			&i.GtfsHash,
 			&i.FeedPk,
 			&i.VehicleID,
-			&i.VehicleLatitude,
-			&i.VehicleLongitude,
+			&i.VehicleLocation,
 			&i.VehicleBearing,
 			&i.VehicleUpdatedAt,
 			&i.ShapeID,
