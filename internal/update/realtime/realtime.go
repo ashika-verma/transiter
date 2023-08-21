@@ -791,7 +791,9 @@ func updateVehicles(ctx context.Context, updateCtx common.UpdateContext, vehicle
 		})
 	}
 
-	_, err = updateCtx.Querier.InsertVehicle(ctx, insertVehicleParams)
+	for _, param := range insertVehicleParams {
+		err = updateCtx.Querier.InsertVehicle(ctx, param)
+	}
 	return err
 }
 

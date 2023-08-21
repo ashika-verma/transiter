@@ -1,4 +1,4 @@
--- name: InsertVehicle :copyfrom
+-- name: InsertVehicle :exec
 INSERT INTO vehicle
     (id, system_pk, trip_pk, label, license_plate, current_status, location, bearing, odometer, speed, congestion_level, updated_at, current_stop_pk, current_stop_sequence, occupancy_status, feed_pk, occupancy_percentage)
 VALUES

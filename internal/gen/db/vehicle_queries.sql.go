@@ -116,6 +116,13 @@ func (q *Queries) GetVehicle(ctx context.Context, arg GetVehicleParams) (GetVehi
 	return i, err
 }
 
+const insertVehicle = `-- name: InsertVehicle :exec
+INSERT INTO vehicle
+    (id, system_pk, trip_pk, label, license_plate, current_status, location, bearing, odometer, speed, congestion_level, updated_at, current_stop_pk, current_stop_sequence, occupancy_status, feed_pk, occupancy_percentage)
+VALUES
+    ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+`
+
 type InsertVehicleParams struct {
 	ID                  pgtype.Text
 	SystemPk            int64
@@ -134,6 +141,29 @@ type InsertVehicleParams struct {
 	OccupancyStatus     pgtype.Text
 	FeedPk              int64
 	OccupancyPercentage pgtype.Int4
+}
+
+func (q *Queries) InsertVehicle(ctx context.Context, arg InsertVehicleParams) error {
+	_, err := q.db.Exec(ctx, insertVehicle,
+		arg.ID,
+		arg.SystemPk,
+		arg.TripPk,
+		arg.Label,
+		arg.LicensePlate,
+		arg.CurrentStatus,
+		arg.Location,
+		arg.Bearing,
+		arg.Odometer,
+		arg.Speed,
+		arg.CongestionLevel,
+		arg.UpdatedAt,
+		arg.CurrentStopPk,
+		arg.CurrentStopSequence,
+		arg.OccupancyStatus,
+		arg.FeedPk,
+		arg.OccupancyPercentage,
+	)
+	return err
 }
 
 const listVehicles = `-- name: ListVehicles :many
