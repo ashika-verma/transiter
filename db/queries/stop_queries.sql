@@ -73,7 +73,7 @@ SELECT stop.* FROM stop
 -- name: ListTripStopTimesByStops :many
 SELECT trip_stop_time.*,
        trip.*, vehicle.id vehicle_id,
-       vehicle.location vehicle_location,
+       vehicle.location::geography vehicle_location,
        vehicle.bearing vehicle_bearing,
        vehicle.updated_at vehicle_updated_at
     FROM trip_stop_time

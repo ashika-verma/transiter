@@ -281,7 +281,7 @@ func (q *Queries) ListStops_Geographic(ctx context.Context, arg ListStops_Geogra
 const listTripStopTimesByStops = `-- name: ListTripStopTimesByStops :many
 SELECT trip_stop_time.pk, trip_stop_time.stop_pk, trip_stop_time.trip_pk, trip_stop_time.arrival_time, trip_stop_time.arrival_delay, trip_stop_time.arrival_uncertainty, trip_stop_time.departure_time, trip_stop_time.departure_delay, trip_stop_time.departure_uncertainty, trip_stop_time.stop_sequence, trip_stop_time.track, trip_stop_time.headsign, trip_stop_time.past,
        trip.pk, trip.id, trip.route_pk, trip.direction_id, trip.started_at, trip.gtfs_hash, trip.feed_pk, vehicle.id vehicle_id,
-       vehicle.location vehicle_location,
+       vehicle.location::geography vehicle_location,
        vehicle.bearing vehicle_bearing,
        vehicle.updated_at vehicle_updated_at
     FROM trip_stop_time
@@ -314,7 +314,7 @@ type ListTripStopTimesByStopsRow struct {
 	GtfsHash             string
 	FeedPk               int64
 	VehicleID            pgtype.Text
-	VehicleLocation      interface{}
+	VehicleLocation      types.Geography
 	VehicleBearing       pgtype.Float4
 	VehicleUpdatedAt     pgtype.Timestamptz
 }
