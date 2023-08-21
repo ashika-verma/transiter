@@ -1,4 +1,4 @@
-CREATE EXTENSION postgis;
+CREATE EXTENSION IF NOT EXISTS postgis;
 
 ALTER TABLE stop ADD COLUMN location geography(POINT);
 UPDATE stop SET location = ST_SetSRID(ST_MakePoint(longitude, latitude), 4326);
