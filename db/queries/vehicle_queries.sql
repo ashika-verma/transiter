@@ -27,11 +27,12 @@ LIMIT sqlc.arg(num_vehicles);
 
 -- name: ListVehicles_Geographic :many
 WITH distance AS (
-  SELECT
-  pk vehicle_pk,
-  ST_Distance(sqlc.arg(base)::geography, location) val
-  FROM vehicle
-  WHERE vehicle.system_pk = sqlc.arg(system_pk) AND location IS NOT NULL
+    SELECT
+        vehicle.pk vehicle_pk,
+        vehicle.location <-> sqlc.arg(base)::geography distance
+    FROM vehicle
+    WHERE vehicle.location IS NOT NULL
+    AND vehicle.system_pk = sqlc.arg(system_pk)
 )
 SELECT vehicle.*,
        stop.id as stop_id,
@@ -42,11 +43,11 @@ SELECT vehicle.*,
        route.color as route_color
 FROM vehicle
 INNER JOIN distance ON vehicle.pk = distance.vehicle_pk
-AND distance.val <= sqlc.arg(max_distance)::float
+AND distance.distance <= sqlc.arg(max_distance)::float
 LEFT JOIN stop ON vehicle.current_stop_pk = stop.pk
 LEFT JOIN trip ON vehicle.trip_pk = trip.pk
 LEFT JOIN route ON trip.route_pk = route.pk
-ORDER BY distance.val
+ORDER BY distance.distance
 LIMIT sqlc.arg(num_vehicles);
 
 -- name: GetVehicle :one

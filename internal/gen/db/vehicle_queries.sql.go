@@ -276,11 +276,12 @@ func (q *Queries) ListVehicles(ctx context.Context, arg ListVehiclesParams) ([]L
 
 const listVehicles_Geographic = `-- name: ListVehicles_Geographic :many
 WITH distance AS (
-  SELECT
-  pk vehicle_pk,
-  ST_Distance($3::geography, location) val
-  FROM vehicle
-  WHERE vehicle.system_pk = $4 AND location IS NOT NULL
+    SELECT
+        vehicle.pk vehicle_pk,
+        vehicle.location <-> $3::geography distance
+    FROM vehicle
+    WHERE vehicle.location IS NOT NULL
+    AND vehicle.system_pk = $4
 )
 SELECT vehicle.pk, vehicle.id, vehicle.system_pk, vehicle.trip_pk, vehicle.label, vehicle.license_plate, vehicle.current_status, vehicle.bearing, vehicle.odometer, vehicle.speed, vehicle.congestion_level, vehicle.updated_at, vehicle.current_stop_pk, vehicle.current_stop_sequence, vehicle.occupancy_status, vehicle.feed_pk, vehicle.occupancy_percentage, vehicle.location,
        stop.id as stop_id,
@@ -291,11 +292,11 @@ SELECT vehicle.pk, vehicle.id, vehicle.system_pk, vehicle.trip_pk, vehicle.label
        route.color as route_color
 FROM vehicle
 INNER JOIN distance ON vehicle.pk = distance.vehicle_pk
-AND distance.val <= $1::float
+AND distance.distance <= $1::float
 LEFT JOIN stop ON vehicle.current_stop_pk = stop.pk
 LEFT JOIN trip ON vehicle.trip_pk = trip.pk
 LEFT JOIN route ON trip.route_pk = route.pk
-ORDER BY distance.val
+ORDER BY distance.distance
 LIMIT $2
 `
 
