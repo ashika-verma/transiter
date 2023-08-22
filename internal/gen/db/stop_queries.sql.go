@@ -217,32 +217,33 @@ func (q *Queries) ListStopsByPk(ctx context.Context, stopPks []int64) ([]ListSto
 
 const listStops_Geographic = `-- name: ListStops_Geographic :many
 WITH distance AS (
-  SELECT
-  pk stop_pk,
-  ST_Distance($3::geography, location) val
-  FROM stop
-  WHERE stop.system_pk = $4 AND location IS NOT NULL
+    SELECT
+        stop.pk stop_pk,
+        stop.location <-> $4::geography distance
+    FROM stop
+    WHERE stop.location IS NOT NULL
 )
 SELECT stop.pk, stop.id, stop.system_pk, stop.parent_stop_pk, stop.name, stop.url, stop.code, stop.description, stop.platform_code, stop.timezone, stop.type, stop.wheelchair_boarding, stop.zone_id, stop.feed_pk, stop.location FROM stop
 INNER JOIN distance ON stop.pk = distance.stop_pk
-AND distance.val <= $1::float
-ORDER BY distance.val
-LIMIT $2
+WHERE stop.system_pk = $1 
+    AND distance.distance <= 1000 * $2::float
+ORDER by distance.distance
+LIMIT $3
 `
 
 type ListStops_GeographicParams struct {
+	SystemPk    int64
 	MaxDistance float64
 	MaxResults  int32
 	Base        types.Geography
-	SystemPk    int64
 }
 
 func (q *Queries) ListStops_Geographic(ctx context.Context, arg ListStops_GeographicParams) ([]Stop, error) {
 	rows, err := q.db.Query(ctx, listStops_Geographic,
+		arg.SystemPk,
 		arg.MaxDistance,
 		arg.MaxResults,
 		arg.Base,
-		arg.SystemPk,
 	)
 	if err != nil {
 		return nil, err

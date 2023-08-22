@@ -52,16 +52,17 @@ LIMIT sqlc.arg(num_stops);
 
 -- name: ListStops_Geographic :many
 WITH distance AS (
-  SELECT
-  pk stop_pk,
-  ST_Distance(sqlc.arg(base)::geography, location) val
-  FROM stop
-  WHERE stop.system_pk = sqlc.arg(system_pk) AND location IS NOT NULL
+    SELECT
+        stop.pk stop_pk,
+        stop.location <-> sqlc.arg(base)::geography distance
+    FROM stop
+    WHERE stop.location IS NOT NULL
 )
 SELECT stop.* FROM stop
 INNER JOIN distance ON stop.pk = distance.stop_pk
-AND distance.val <= sqlc.arg(max_distance)::float
-ORDER BY distance.val
+WHERE stop.system_pk = sqlc.arg(system_pk) 
+    AND distance.distance <= 1000 * sqlc.arg(max_distance)::float
+ORDER by distance.distance
 LIMIT sqlc.arg(max_results);
 
 -- name: GetStop :one
