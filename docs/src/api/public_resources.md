@@ -456,6 +456,58 @@ This corresponds to possible values of the `route_type` column in `routes.txt`.
 
 
 
+## Shape
+
+
+	
+
+
+| Field | Type |  Description |
+| ----- | ---- | ----------- |
+| id | string | Unique ID for the shape.
+| points | [Shape.ShapePoint](public_resources.md#Shape.ShapePoint) | Ordered list of points that make up the shape.
+
+
+
+
+
+
+#### Shape.Reference
+
+
+	
+
+
+| Field | Type |  Description |
+| ----- | ---- | ----------- |
+| id | string | 
+| resource | [Resource](public_resources.md#Resource) | 
+
+
+
+
+
+
+#### Shape.ShapePoint
+
+A point within the shape.
+	
+
+
+| Field | Type |  Description |
+| ----- | ---- | ----------- |
+| latitude | double | Latitude of the point.
+| longitude | double | Longitude of the point.
+| distance | double | Distance from the start of the shape to this point.
+
+
+
+
+
+
+
+
+
 ## Stop
 
 The Stop resource.
@@ -734,6 +786,7 @@ Enum describing the possible statuses of a system.
 | vehicle | [Vehicle.Reference](public_resources.md#Vehicle.Reference) | 
 | direction_id | bool | 
 | stop_times | [StopTime](public_resources.md#StopTime) | 
+| shape | [Shape.Reference](public_resources.md#Shape.Reference) | 
 
 
 

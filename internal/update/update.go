@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jamespfennell/gtfs"
+	"github.com/jamespfennell/transiter/internal/convert"
 	"github.com/jamespfennell/transiter/internal/gen/api"
 	"github.com/jamespfennell/transiter/internal/gen/db"
 	"github.com/jamespfennell/transiter/internal/monitoring"
@@ -22,7 +23,6 @@ import (
 	"github.com/jamespfennell/transiter/internal/update/realtime"
 	"github.com/jamespfennell/transiter/internal/update/static"
 	"golang.org/x/exp/slog"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -96,7 +96,7 @@ func Update(ctx context.Context, logger *slog.Logger, pool *pgxpool.Pool, m moni
 	totalLatencyMs := totalLatency.Milliseconds()
 	feedUpdate.TotalLatencyMs = &totalLatencyMs
 	if err != nil {
-		logger.ErrorCtx(ctx, fmt.Sprintf("failed update with reason %s and error %s in %s", feedUpdate.Status.String(), err, totalLatency))
+		logger.ErrorCtx(ctx, fmt.Sprintf("failed update with reason %s and error %q in %s", feedUpdate.Status.String(), err, totalLatency))
 	} else {
 		logger.DebugCtx(ctx, fmt.Sprintf("successful update with reason %s in %s", feedUpdate.Status.String(), totalLatency))
 	}
@@ -119,7 +119,7 @@ func markSuccess(feedUpdate *api.FeedUpdate, status api.FeedUpdate_Status) (*api
 func run(ctx context.Context, pool *pgxpool.Pool, logger *slog.Logger, systemID string, feed db.Feed, force bool) (*api.FeedUpdate, error) {
 	feedUpdate := &api.FeedUpdate{}
 	var feedConfig api.FeedConfig
-	if err := protojson.Unmarshal([]byte(feed.Config), &feedConfig); err != nil {
+	if err := convert.UnmarshalJSONAndDiscardUnknown([]byte(feed.Config), &feedConfig); err != nil {
 		return markFailure(feedUpdate, api.FeedUpdate_FAILED_INVALID_FEED_CONFIG, fmt.Errorf("failed to parse feed config: %w", err))
 	}
 	NormalizeFeedConfig(&feedConfig)

@@ -189,7 +189,7 @@ message FeedConfig {
   // Additional options GTFS realtime feeds.
   optional GtfsRealtimeOptions gtfs_realtime_options = 9;
 
-  // Required for install specifies whether an update should be performed for this feed during system install. 
+  // Required for install specifies whether an update should be performed for this feed during system install.
   // If true, an update is performed and if the update fails the installation fails.
   //
   // If unspecified, defaults to false for GTFS realtime feeds and true for all other
@@ -260,7 +260,6 @@ message GtfsRealtimeOptions {
     NO_EXTENSION = 0;
     NYCT_TRIPS = 1;
     NYCT_ALERTS = 2;
-    NYCT_BUS_TRIPS = 3;
   }
   Extension extension = 1;
 
@@ -293,12 +292,6 @@ message GtfsRealtimeOptions {
   // This should not be used for systems where a trip can call at the same
   // stop multiple times.
   bool reassign_stop_sequences = 4;
-
-  // If true, only process entities in a feed if the message contains
-  // the full entity. This is useful for cases where there are multiple
-  // feeds for the same system, and some feeds contain only partial
-  // information about entities.
-  bool only_process_full_entities = 5;
 }
 
 // Description of the configuration for a collection of service maps.
