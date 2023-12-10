@@ -44,24 +44,19 @@ func Update(ctx context.Context, updateCtx common.UpdateContext, data *gtfs.Real
 }
 
 func updateTrips(ctx context.Context, updateCtx common.UpdateContext, trips []gtfs.Trip) error {
-	var validTripEntities []gtfs.Trip
-	if updateCtx.FeedConfig != nil &&
-		updateCtx.FeedConfig.GetGtfsRealtimeOptions().GetOnlyProcessFullEntities() {
-		for _, trip := range trips {
-			// Only insert trips that are in the feed.
-			if trip.IsEntityInMessage {
-				validTripEntities = append(validTripEntities, trip)
-			}
+	var tripEntitiesInFeed []gtfs.Trip
+	for _, trip := range trips {
+		// Only insert trips that are in the feed.
+		if trip.IsEntityInMessage {
+			tripEntitiesInFeed = append(tripEntitiesInFeed, trip)
 		}
-	} else {
-		validTripEntities = trips
 	}
 
-	stopIDToPk, err := dbwrappers.MapStopIDToPkInSystem(ctx, updateCtx.Querier, updateCtx.SystemPk, stopIDsInTrips(validTripEntities))
+	stopIDToPk, err := dbwrappers.MapStopIDToPkInSystem(ctx, updateCtx.Querier, updateCtx.SystemPk, stopIDsInTrips(tripEntitiesInFeed))
 	if err != nil {
 		return err
 	}
-	stopHeadsignMatcher, err := NewStopHeadsignMatcher(ctx, updateCtx.Querier, stopIDToPk, validTripEntities)
+	stopHeadsignMatcher, err := NewStopHeadsignMatcher(ctx, updateCtx.Querier, stopIDToPk, tripEntitiesInFeed)
 	if err != nil {
 		return err
 	}
@@ -70,7 +65,7 @@ func updateTrips(ctx context.Context, updateCtx common.UpdateContext, trips []gt
 
 	// Collect all trips without a route ID in update
 	var tripIDsWithoutRouteIDs []string
-	for _, trip := range validTripEntities {
+	for _, trip := range tripEntitiesInFeed {
 		if trip.ID.RouteID == "" {
 			tripIDsWithoutRouteIDs = append(tripIDsWithoutRouteIDs, trip.ID.ID)
 		}
@@ -88,7 +83,7 @@ func updateTrips(ctx context.Context, updateCtx common.UpdateContext, trips []gt
 
 	// For all trips with provided route IDs, get the corresponding route Pks
 	var routeIDToPk map[string]int64
-	routeIDsInTrips := routeIDsInTrips(validTripEntities)
+	routeIDsInTrips := routeIDsInTrips(tripEntitiesInFeed)
 	if len(routeIDsInTrips) > 0 {
 		routeIDToPk, err = dbwrappers.MapRouteIDToPkInSystem(ctx, updateCtx.Querier, updateCtx.SystemPk, routeIDsInTrips)
 		if err != nil {
@@ -102,13 +97,13 @@ func updateTrips(ctx context.Context, updateCtx common.UpdateContext, trips []gt
 		return err
 	}
 
-	stagedUpdates := newStagedUpdates(validTripEntities)
+	stagedUpdates := newStagedUpdates(tripEntitiesInFeed)
 	seenUIDs := map[dbwrappers.TripUID]bool{}
 	tripUIDToPk := map[dbwrappers.TripUID]int64{}
 	tripUIDToTrip := map[dbwrappers.TripUID]*gtfs.Trip{}
 	activeTripPks := []int64{}
-	for i := range validTripEntities {
-		trip := &validTripEntities[i]
+	for i := range tripEntitiesInFeed {
+		trip := &tripEntitiesInFeed[i]
 
 		var routePk int64
 		var routeOk bool
@@ -542,6 +537,7 @@ func insertAlerts(ctx context.Context, updateCtx common.UpdateContext, alerts []
 	var agencyReferenced bool
 	var routeIDs []string
 	var stopIDs []string
+	var tripIDs []string
 	var newAlertPks []int64
 	for _, alert := range alerts {
 		for _, informedEntity := range alert.InformedEntities {
@@ -553,6 +549,9 @@ func insertAlerts(ctx context.Context, updateCtx common.UpdateContext, alerts []
 			}
 			if informedEntity.StopID != nil {
 				stopIDs = append(stopIDs, *informedEntity.StopID)
+			}
+			if informedEntity.TripID != nil && informedEntity.TripID.ID != "" {
+				tripIDs = append(tripIDs, informedEntity.TripID.ID)
 			}
 		}
 	}
@@ -572,6 +571,15 @@ func insertAlerts(ctx context.Context, updateCtx common.UpdateContext, alerts []
 	if err != nil {
 		return nil, err
 	}
+	tripIDToPk, err := dbwrappers.MapTripIDToPkInSystem(ctx, updateCtx.Querier, updateCtx.SystemPk, tripIDs)
+	if err != nil {
+		return nil, err
+	}
+	scheduledTripIDToPk, err := dbwrappers.MapScheduledTripIDToPkInSystem(ctx, updateCtx.Querier, updateCtx.SystemPk, tripIDs)
+	if err != nil {
+		return nil, err
+	}
+
 	for _, alert := range alerts {
 		pk, err := updateCtx.Querier.InsertAlert(ctx, db.InsertAlertParams{
 			ID:          alert.ID,
@@ -617,6 +625,35 @@ func insertAlerts(ctx context.Context, updateCtx common.UpdateContext, alerts []
 					}); err != nil {
 						return nil, err
 					}
+				}
+			}
+			if informedEntity.TripID != nil {
+				tripID := informedEntity.TripID.ID
+				var tripPkOrNil *int64 = nil
+				if tripPk, ok := tripIDToPk[tripID]; ok {
+					tripPkOrNil = &tripPk
+				}
+				var scheduledTripPkOrNil *int64 = nil
+				if scheduledTripPk, ok := scheduledTripIDToPk[tripID]; ok {
+					scheduledTripPkOrNil = &scheduledTripPk
+				}
+				if tripPkOrNil != nil || scheduledTripPkOrNil != nil {
+					err := updateCtx.Querier.InsertAlertTrip(ctx, db.InsertAlertTripParams{
+						AlertPk:         pk,
+						TripPk:          convert.NullInt64(tripPkOrNil),
+						ScheduledTripPk: convert.NullInt64(scheduledTripPkOrNil),
+					})
+					if err != nil {
+						return nil, err
+					}
+				}
+			}
+			if informedEntity.RouteType != gtfs.RouteType_Unknown {
+				if err := updateCtx.Querier.InsertAlertRouteType(ctx, db.InsertAlertRouteTypeParams{
+					AlertPk:   pk,
+					RouteType: informedEntity.RouteType.String(),
+				}); err != nil {
+					return nil, err
 				}
 			}
 		}
